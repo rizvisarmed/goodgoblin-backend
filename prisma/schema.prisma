@@ -1,0 +1,322 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DB_URL")
+}
+
+model User {
+  id                     Int                      @id @default(autoincrement())
+  firstName              String                   @default("John")
+  lastName               String                   @default("Doe")
+  email                  String                   @unique
+  imgUrl                 String?
+  imgKey                 String?
+  stripeCustomerId       String?
+  isOrientationCompleted Boolean                  @default(false)
+  isTrialAvailed         Boolean                  @default(false)
+  isToneMatching         Boolean                  @default(false)
+  isPrepAiCompleted      Boolean                  @default(false)
+  isSubscriptionActive   Boolean                  @default(false)
+  password               String?
+  role                   UserRole
+  essayMode              EssayManipulateMode      @default(outline)
+  noOfAiChecks           String                   @default("1")
+  noOfEssaysToGenerate   String                   @default("0")
+  noOfEssentials         Int                      @default(0)
+  planId                 Int
+  createdAt              DateTime?                @default(now())
+  updatedAt              DateTime?                @updatedAt
+  interviewAnswers       InterviewAnswer[]
+  interviewQuestions     InterviewQuestion[]
+  passwordResetTokens    PasswordResetToken[]
+  reportedIssues         ReportedIssue[]
+  transactions           Transaction[]
+  plan                   Plan                     @relation(fields: [planId], references: [id])
+  universities           UserUniversityDeadline[]
+
+  @@index([planId], map: "User_planId_fkey")
+}
+
+model Plan {
+  id           Int       @id @default(autoincrement())
+  name         String
+  prices       Json?
+  otherDetails Json?
+  createdAt    DateTime? @default(now())
+  updatedAt    DateTime? @updatedAt
+  users        User[]
+}
+
+model Transaction {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  subscriptions String
+  status        String
+  amount        Float
+  currency      String
+  createdAt     DateTime? @default(now())
+  updatedAt     DateTime? @updatedAt
+  user          User      @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "Transaction_userId_fkey")
+}
+
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  token     String    @unique
+  userId    Int
+  createdAt DateTime? @default(now())
+  expiresAt DateTime
+  updatedAt DateTime? @updatedAt
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "PasswordResetToken_userId_fkey")
+}
+
+model University {
+  id                     Int                      @id @default(autoincrement())
+  name                   String
+  state                  String
+  acronym                String?
+  numberOfRequiredEssays Int
+  noEssayFound           Boolean
+  isDefault              Boolean                  @default(false)
+  createdAt              DateTime?                @default(now())
+  updatedAt              DateTime?                @updatedAt
+  deadlines              Deadline[]
+  essays                 Essay[]
+  universities           UserUniversityDeadline[]
+}
+
+model Deadline {
+  id           Int                      @id @default(autoincrement())
+  name         DeadlinesName            @default(Early_Decision)
+  deadline     DateTime
+  universityId Int
+  createdAt    DateTime?                @default(now())
+  updatedAt    DateTime?                @updatedAt
+  university   University               @relation(fields: [universityId], references: [id])
+  universities UserUniversityDeadline[]
+
+  @@index([universityId], map: "Deadline_universityId_fkey")
+}
+
+model SystemGuidance {
+  id        Int       @id @default(autoincrement())
+  text      String    @db.LongText
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+model EssayCategory {
+  id                         Int       @id @default(autoincrement())
+  name                       String
+  list                       Json
+  systemGuidanceV1           Int
+  systemGuidanceV2           Int
+  systemGuidanceV3           Int
+  systemGuidanceFinal        Int
+  systemGuidanceFinalInterim Int       @default(51)
+  createdAt                  DateTime? @default(now())
+  updatedAt                  DateTime? @updatedAt
+  essays                     Essay[]
+}
+
+model Essay {
+  id               Int               @id @default(autoincrement())
+  universityId     Int
+  categoryId       Int
+  text             String            @db.LongText
+  minWordLimit     Int
+  maxWordLimit     Int
+  createdAt        DateTime?         @default(now())
+  updatedAt        DateTime?         @updatedAt
+  category         EssayCategory     @relation(fields: [categoryId], references: [id])
+  university       University        @relation(fields: [universityId], references: [id])
+  essaySubmissions EssaySubmission[]
+  reportedIssues   ReportedIssue[]
+
+  @@index([categoryId], map: "Essay_categoryId_fkey")
+  @@index([universityId], map: "Essay_universityId_fkey")
+}
+
+model EssaySubmission {
+  id                   Int                    @id @default(autoincrement())
+  collegeApplicationId Int
+  essayPromptId        Int
+  prompt               String?                @db.LongText
+  systemGuidance       Json?
+  counselling          Json?
+  recommendations      Json?
+  v1                   String?                @db.LongText
+  v2                   String?                @db.LongText
+  v3                   String?                @db.LongText
+  final                String?                @db.LongText
+  personalizeText      String?                @db.LongText
+  submission           String?                @db.LongText
+  isGenerating         Boolean                @default(false)
+  isCompleted          Boolean                @default(false)
+  isAllowForEssential  Boolean                @default(false)
+  favrouiteVersion     String?
+  finalInput           String?                @db.LongText
+  initialRequestedOn   DateTime?
+  generatedOn          DateTime?
+  noOfAiScans          String                 @default("0")
+  noOfRegenerations    Int                    @default(0)
+  humanScore           Float?
+  createdAt            DateTime?              @default(now())
+  updatedAt            DateTime?              @updatedAt
+  collegeApplication   UserUniversityDeadline @relation(fields: [collegeApplicationId], references: [id])
+  essay                Essay                  @relation(fields: [essayPromptId], references: [id])
+
+  @@index([collegeApplicationId], map: "EssaySubmission_collegeApplicationId_fkey")
+  @@index([essayPromptId], map: "EssaySubmission_essayPromptId_fkey")
+}
+
+model UserUniversityDeadline {
+  id               Int                    @id @default(autoincrement())
+  userId           Int
+  universityId     Int
+  deadlineId       Int
+  type             SelectedUniversityType
+  createdAt        DateTime?              @default(now())
+  updatedAt        DateTime?              @updatedAt
+  essaySubmissions EssaySubmission[]
+  reportedIssues   ReportedIssue[]
+  deadline         Deadline               @relation(fields: [deadlineId], references: [id])
+  university       University             @relation(fields: [universityId], references: [id])
+  user             User                   @relation(fields: [userId], references: [id])
+
+  @@index([deadlineId], map: "UserUniversityDeadline_deadlineId_fkey")
+  @@index([universityId], map: "UserUniversityDeadline_universityId_fkey")
+  @@index([userId], map: "UserUniversityDeadline_userId_fkey")
+}
+
+model InterviewSection {
+  id                 Int                 @id @default(autoincrement())
+  sectionName        String              @db.LongText
+  sectionSubTitle    String
+  isRequired         Boolean
+  createdAt          DateTime?           @default(now())
+  updatedAt          DateTime?           @updatedAt
+  interviewQuestions InterviewQuestion[]
+}
+
+model InterviewQuestion {
+  id                    Int                              @id @default(autoincrement())
+  sectionId             Int
+  studentId             Int?
+  sampleAnswersId       Int?
+  questionText          String                           @db.LongText
+  customData            Json?
+  inputType             String
+  isRequired            Boolean
+  minWordLimit          Int
+  maxWordLimit          Int
+  dependentOnQuestionId Int?
+  answerType            AnswerType                       @default(String)
+  createdAt             DateTime?                        @default(now())
+  updatedAt             DateTime?                        @updatedAt
+  interviewAnswers      InterviewAnswer[]
+  section               InterviewSection                 @relation(fields: [sectionId], references: [id])
+  student               User?                            @relation(fields: [studentId], references: [id])
+  essayCategories       InterviewQuestionEssayCategory[]
+  sampleAnswers         InterviewQuestionSampleAnswers?  @relation(fields: [sampleAnswersId], references: [id])
+
+  @@index([sectionId], map: "InterviewQuestion_sectionId_fkey")
+  @@index([studentId], map: "InterviewQuestion_studentId_fkey")
+}
+
+model InterviewQuestionSampleAnswers {
+  id                 Int                 @id @default(autoincrement())
+  texts              Json
+  createdAt          DateTime?           @default(now())
+  updatedAt          DateTime?           @updatedAt
+  interviewQuestions InterviewQuestion[]
+}
+
+model InterviewQuestionEssayCategory {
+  id                   Int                @id @default(autoincrement())
+  interviewQuestionId  Int?
+  promptQuestionBefore String?            @db.LongText
+  promptQuestionAfter  String?            @db.LongText
+  essayCategoryLetter  String
+  createdAt            DateTime?          @default(now())
+  updatedAt            DateTime?          @updatedAt
+  interviewQuestion    InterviewQuestion? @relation(fields: [interviewQuestionId], references: [id])
+
+  @@index([interviewQuestionId], map: "InterviewQuestionEssayCategory_interviewQuestionId_fkey")
+}
+
+model InterviewAnswer {
+  id                  Int               @id @default(autoincrement())
+  studentId           Int
+  interviewQuestionId Int
+  answerText          String?           @db.LongText
+  customAnswer        Json?
+  createdAt           DateTime?         @default(now())
+  updatedAt           DateTime?         @updatedAt
+  interviewQuestion   InterviewQuestion @relation(fields: [interviewQuestionId], references: [id])
+  student             User              @relation(fields: [studentId], references: [id])
+
+  @@index([interviewQuestionId], map: "InterviewAnswer_interviewQuestionId_fkey")
+  @@index([studentId], map: "InterviewAnswer_studentId_fkey")
+}
+
+model ReportedIssue {
+  id                   Int                    @id @default(autoincrement())
+  studentId            Int
+  universityDeadlineId Int
+  type                 ReportedIssueType
+  otherDetails         Json
+  createdAt            DateTime?              @default(now())
+  updatedAt            DateTime?              @updatedAt
+  essaySubmissionId    Int?
+  essay                Essay?                 @relation(fields: [essaySubmissionId], references: [id])
+  student              User                   @relation(fields: [studentId], references: [id])
+  universityDeadline   UserUniversityDeadline @relation(fields: [universityDeadlineId], references: [id])
+
+  @@index([essaySubmissionId], map: "ReportedIssue_essaySubmissionId_fkey")
+  @@index([studentId], map: "ReportedIssue_studentId_fkey")
+  @@index([universityDeadlineId], map: "ReportedIssue_universityDeadlineId_fkey")
+}
+
+enum UserRole {
+  admin
+  student
+}
+
+enum EssayManipulateMode {
+  brainstorm
+  outline
+}
+
+enum SelectedUniversityType {
+  reach
+  target
+  safety
+}
+
+enum DeadlinesName {
+  Early_Decision
+  Early_Decision_2
+  Early_Action
+  Early_Action_2
+  Regular_Decision
+  Rolling_Admission
+}
+
+enum AnswerType {
+  Array
+  String
+  Boolean
+}
+
+enum ReportedIssueType {
+  university
+  essay
+}

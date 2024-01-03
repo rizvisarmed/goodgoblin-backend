@@ -1,0 +1,43 @@
+{
+  "name": "ed-tech",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "NODE_ENV=development nodemon ./server.js",
+    "dev-start": "NODE_ENV=production nodemon ./server.js",
+    "start": "NODE_ENV=production node ./server.js",
+    "deploy": "serverless deploy",
+    "prisma:studio": "prisma studio",
+    "db:push": "prisma db push"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^4.15.0",
+    "@sendgrid/mail": "^7.7.0",
+    "aws-sdk": "^2.1388.0",
+    "axios": "^0.26.1",
+    "bcryptjs": "^2.4.3",
+    "cookie-session": "^2.0.0",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "dotenv": "^10.0.0",
+    "esm": "^3.2.25",
+    "express": "^4.17.1",
+    "joi": "^17.4.2",
+    "jsonwebtoken": "^8.5.1",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "passport": "0.5",
+    "passport-google-oauth20": "^2.0.0",
+    "serverless-http": "^3.2.0",
+    "stripe": "^13.2.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.21",
+    "prisma": "^4.11.0"
+  }
+}
